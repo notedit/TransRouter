@@ -33,7 +33,7 @@ class GeminiTranscriber:
 
         # 创建会话
         self.client = genai.Client(api_key=os.getenv(
-            'GEMINI_API_KEY'), http_options={'api_version': 'v1alpha'})
+            'GOOGLE_API_KEY'), http_options={'api_version': 'v1alpha'})
         self.session = None
         self.send_task = None
         self.session_task = None
