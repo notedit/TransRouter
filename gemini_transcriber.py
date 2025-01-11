@@ -4,9 +4,31 @@ import os
 import asyncio
 import logging
 
+from typing import AsyncIterator, TypeVar
+
+
+T = TypeVar('T')
+
+
+class QueueIterator(AsyncIterator[T]):
+    def __init__(self, queue: asyncio.Queue[T]):
+        self.queue = queue
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            item = await self.queue.get()
+            if item is None:  # 使用 None 作为结束标志
+                raise StopAsyncIteration
+            return item
+        finally:
+            self.queue.task_done()
+
 
 class GeminiTranscriber:
-    def __init__(self):
+    def __init__(self, system_instruction: str = None, model_id: str = "models/gemini-2.0-flash-exp", modalities: list[str] = ["AUDIO"]):
         super().__init__()
 
         # 获取日志记录器
@@ -15,14 +37,19 @@ class GeminiTranscriber:
         # 加载环境变量
         load_dotenv(override=True)
 
-        self.model_id = "models/gemini-2.0-flash-exp"
+        self.model_id = "models/gemini-2.0-flash-exp" if model_id is None else model_id
 
-        system_instruction = "As a professional translator, translate the audio input into English, providing only the translated content without any additional text."
-        system_instruction = "As a professional interpreter, translate my Chinese input to English, providing only the translation with no additional text."
+        if system_instruction is None:
+            self.system_instruction = "As a professional interpreter, translate the audio input to English, providing only the translation with no additional text."
+        else:
+            self.system_instruction = system_instruction
+
+        self.modalities = modalities if modalities is not None else ["AUDIO"]
+
         # 音频配置
         self.config = {
-            "generation_config": {"response_modalities": ["AUDIO"]},
-            "system_instruction": system_instruction
+            "generation_config": {"response_modalities": self.modalities},
+            "system_instruction": self.system_instruction
         }
 
         # 创建音频输入输出队列
@@ -30,6 +57,8 @@ class GeminiTranscriber:
         self.audio_out = asyncio.Queue(maxsize=50)  # 限制队列最大长度为50
         # 创建异步结果队列
         self.result_queue = asyncio.Queue()
+
+        self.audio_in_iterator = QueueIterator(self.audio_in)
 
         # 创建会话
         self.client = genai.Client(api_key=os.getenv(
@@ -79,15 +108,15 @@ class GeminiTranscriber:
                                         if part.text is not None:
                                             full_text += part.text
                                         elif part.inline_data is not None:
-                                            self.logger.info(
-                                                f'收到音频数据,长度: {len(part.inline_data.data)}')
                                             # 将接收到的音频放入输入队列
                                             await self.audio_in.put(part.inline_data.data)
 
                                 if response.server_content.turn_complete:
                                     await self.result_queue.put(full_text)
-                                    self.logger.info(f'转录文本: {full_text}')
-                                    full_text = ''
+                                    self.logger.info(f'turn_complete: ===')
+                                    if full_text:
+                                        self.logger.info(f'text: {full_text}')
+                                        full_text = ''
                                     # 发送结束信号
                                     await self.audio_in.put(None)
 

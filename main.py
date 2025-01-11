@@ -95,13 +95,5 @@ def run(
         typer.echo("\n程序已停止")
 
 
-@app.command()
-def devices():
-    """
-    列出所有可用的音频设备
-    """
-    device.list_devices()
-
-
 if __name__ == "__main__":
     app()
