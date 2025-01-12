@@ -5,12 +5,10 @@ TransRouter 是一个实时语音翻译工具，使用 Google Gemini 大模型�
 ## 功能特点
 
 - 实时语音翻译
-- 中英文双向翻译
+- 中=》英翻译
 - 自动语音合成
 - 与 Zoom 等会议软件无缝集成
 - 低延迟的流式处理
-- 自动保存原始录音和合成音频
-- 完整的日志记录
 
 ## 系统要求
 
@@ -35,7 +33,7 @@ cd TransRouter
 Mac:
 ```bash
 python -m venv venv
-.\venv\Scripts\activate
+./venv/bin/activate
 ```
 
 3. 安装依赖：
@@ -45,13 +43,12 @@ pip install -r requirements.txt
 ```
 
 
-
 4. 配置环境变量：
    - 复制 `.env.example` 为 `.env`
    - 填入您的 API 密钥：
 
 ```bash
-GEMINI_API_KEY=your_gemini_api_key
+GOOGLE_API_KEY=your_gemini_api_key
 ```
 
 
@@ -69,7 +66,6 @@ brew install blackhole-2ch
    - 确认可以看到 BlackHole 2ch 设备
 
 
-
 ### Zoom 配置
 1. 打开 Zoom 设置 > 音频
 2. 麦克风：选择系统默认麦克风
@@ -78,28 +74,36 @@ brew install blackhole-2ch
 
 ## 使用说明
 
-1. 启动程序：
+1. 查看可用设备：
 
 ```bash
-python transrouter.py
+python main.py --list-devices
 ```
 
-2. 程序功能：
-   - 默认模式：识别中文并翻译为英文  
-   - 按 Ctrl+C：停止程序
+2. 基本使用
 
-3. 音频文件：
-   - 原始录音保存在 `recordings` 目录
-   - 合成语音保存在 `synthesis` 目录
-   - 日志文件保存在 `logs` 目录
-  
+```bash
+python main.py
+```
+
+3. 指定输入输出设备
+
+```bash
+python main.py --input-device "输入设备名称" --output-device "输出设备名称"
+```
+
+4. 使用 BlackHole 作为输出设备：
+```bash
+python main.py --blackhole
+```
+
 
 ## 技术实现
 
 - 音频采集：使用 sounddevice 进行实时音频采集
 - 语音翻译：使用 Google Gemini 大模型进行音频翻译
 - 音频输出：使用异步音频流实现低延迟播放
-- 日志记录：使用 Python logging 模块进行完整日志记录
+
 
 ## 常见问题
 

@@ -23,15 +23,29 @@ CHUNK_SIZE = 512
 
 MODEL = "models/gemini-2.0-flash-exp"
 
-client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'),
+client = genai.Client(api_key=os.getenv('GOOGLE_API_KEY'),
                       http_options={'api_version': 'v1alpha'})
 
-CONFIG = {
-    "generation_config": {"response_modalities": ["AUDIO"]},
-    "system_instruction": "As a professional interpreter, translate my Chinese input to English, providing only the translation with no additional text."
-}
+transcriber = """Please transcribe this audio into text. Requirements:
+1、Keep the original language unchanged;
+2、Preserve important non-verbal information (such as [laugh], [pause], etc.);
+3、Remove some colloquialisms.
+"""
 
-pya = pyaudio.PyAudio()
+translator = """
+Please serve as a professional translator for Chinese to English translation. Requirements:
+
+1、Provide accurate, idiomatic English translations that preserve the original meaning and tone;
+2、Maintain appropriate register and formality level of the source text;
+3、Handle industry-specific terminology with precision;
+4、Preserve cultural nuances and context where relevant.
+5、providing only the translation with no additional text.
+"""
+
+CONFIG = {
+    "generation_config": {"response_modalities": ["TEXT"]},
+    "system_instruction": translator
+}
 
 
 class AudioLoop:
@@ -52,6 +66,9 @@ class AudioLoop:
             if text.lower() == "q":
                 break
             await self.session.send(text or ".", end_of_turn=True)
+
+            # await asyncio.sleep(2)
+            # await self.session.send(" ", end_of_turn=True)
 
     # def _get_frame(self, cap):
     #     # Read the frameq
@@ -145,7 +162,6 @@ class AudioLoop:
                         parts = model_turn.parts
 
                         for part in parts:
-                            print(part)
                             if part.text is not None:
                                 print(part.text, end="")
                             elif part.inline_data is not None:
